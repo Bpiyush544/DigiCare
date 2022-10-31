@@ -10,3 +10,5 @@ Professional Doctors can also register themselves on our platform if they want t
 Registered users would be made to go through a process of self-evaluation of their body and evident symptoms would be checked in and submitted.
 Once we get the symptoms the person is having, our Machine Learning Algorithm will predict the disease the person might be suffering from and the list of concerned doctors who have expertise for that disease would be presented also the basic precautions and tips to keep care of the health of person would be recommended to the User. 
 Though we can never be 100% sure about the prediction but it is surely an early warning for the person suffering from specific symptoms.
+
+checked in Kartik
