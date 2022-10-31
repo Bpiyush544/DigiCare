@@ -7,8 +7,11 @@
     <title>Checking in here</title>
 </head>
 <body>
-    <form action="/" method="POST">
-
+    <form action="" method="POST">
+        {% csrf_token %}
+        <input type="text" name="sym">
+        <br>
+        <button type="submit">Submit</button>
     </form>
 </body>
 </html>
