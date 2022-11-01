@@ -1,10 +1,83 @@
-from django.shortcuts import render
-#loading trained_model
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.http import JsonResponse
+from datetime import date
+
+from django.contrib import messages
+from django.contrib.auth.models import User , auth
+from .models import patient , doctor , diseaseinfo , consultation ,rating_review
 import joblib as jb
 model = jb.load('trained_model')
 # Create your views here.
 
+
+
 def home(request):
+
+  if request.method == 'GET':
+        
+      if request.user.is_authenticated:
+        return render(request,'homepage/index.html')
+
+      else :
+        return render(request,'homepage/index.html')
+
+
+def admin_ui(request):
+    
+    if request.method == 'GET':
+
+      if request.user.is_authenticated:
+
+        auser = request.user
+        Feedbackobj = Feedback.objects.all()
+
+        return render(request,'admin/admin_ui/admin_ui.html' , {"auser":auser,"Feedback":Feedbackobj})
+
+      else :
+        return redirect('home')
+
+
+
+    if request.method == 'POST':
+
+       return render(request,'patient/patient_ui/profile.html')
+
+
+
+def patient_ui(request):
+
+    if request.method == 'GET':
+
+      if request.user.is_authenticated:
+
+        patientusername = request.session['patientusername']
+        puser = User.objects.get(username=patientusername)
+
+        return render(request,'patient/patient_ui/profile.html' , {"puser":puser})
+
+      else :
+        return redirect('home')
+
+
+
+    if request.method == 'POST':
+
+       return render(request,'patient/patient_ui/profile.html')
+
+
+def pviewprofile(request, patientusername):
+    
+    if request.method == 'GET':
+
+          puser = User.objects.get(username=patientusername)
+
+          return render(request,'patient/view_profile/view_profile.html', {"puser":puser})
+
+
+
+
+def checkdisease(request):
     
     diseaselist=['Fungal infection','Allergy','GERD','Chronic cholestasis','Drug Reaction','Peptic ulcer diseae','AIDS','Diabetes ',
     'Gastroenteritis','Bronchial Asthma','Hypertension ','Migraine','Cervical spondylosis','Paralysis (brain hemorrhage)',
@@ -73,4 +146,168 @@ def home(request):
         print(syms)
 
     return render(request, 'home.html')
+
+
+
+
+
+def pconsultation_history(request):
+
+    if request.method == 'GET':
+
+      patientusername = request.session['patientusername']
+      puser = User.objects.get(username=patientusername)
+      patient_obj = puser.patient
+        
+      consultationnew = consultation.objects.filter(patient = patient_obj)
+      
+    
+      return render(request,'patient/consultation_history/consultation_history.html',{"consultation":consultationnew})
+
+
+def dconsultation_history(request):
+
+    if request.method == 'GET':
+
+      doctorusername = request.session['doctorusername']
+      duser = User.objects.get(username=doctorusername)
+      doctor_obj = duser.doctor
+        
+      consultationnew = consultation.objects.filter(doctor = doctor_obj)
+      
+    
+      return render(request,'doctor/consultation_history/consultation_history.html',{"consultation":consultationnew})
+
+
+
+def doctor_ui(request):
+
+    if request.method == 'GET':
+
+      doctorid = request.session['doctorusername']
+      duser = User.objects.get(username=doctorid)
+
+    
+      return render(request,'doctor/doctor_ui/profile.html',{"duser":duser})
+
+
+
+      
+
+
+def dviewprofile(request, doctorusername):
+
+    if request.method == 'GET':
+
+         
+         duser = User.objects.get(username=doctorusername)
+         r = rating_review.objects.filter(doctor=duser.doctor)
+       
+         return render(request,'doctor/view_profile/view_profile.html', {"duser":duser, "rate":r} )
+
+
+
+
+
+
+
+
+       
+def  consult_a_doctor(request):
+
+
+    if request.method == 'GET':
+
+        
+        doctortype = request.session['doctortype']
+        print(doctortype)
+        dobj = doctor.objects.all()
+        #dobj = doctor.objects.filter(specialization=doctortype)
+
+
+        return render(request,'patient/consult_a_doctor/consult_a_doctor.html',{"dobj":dobj})
+
+   
+
+
+def  make_consultation(request, doctorusername):
+
+    if request.method == 'POST':
+       
+
+        patientusername = request.session['patientusername']
+        puser = User.objects.get(username=patientusername)
+        patient_obj = puser.patient
+        
+        
+        #doctorusername = request.session['doctorusername']
+        duser = User.objects.get(username=doctorusername)
+        doctor_obj = duser.doctor
+        request.session['doctorusername'] = doctorusername
+
+
+        diseaseinfo_id = request.session['diseaseinfo_id']
+        diseaseinfo_obj = diseaseinfo.objects.get(id=diseaseinfo_id)
+
+        consultation_date = date.today()
+        status = "active"
+        
+        consultation_new = consultation( patient=patient_obj, doctor=doctor_obj, diseaseinfo=diseaseinfo_obj, consultation_date=consultation_date,status=status)
+        consultation_new.save()
+
+        request.session['consultation_id'] = consultation_new.id
+
+        print("consultation record is saved sucessfully.............................")
+
+         
+        return redirect('consultationview',consultation_new.id)
+
+
+
+def  consultationview(request,consultation_id):
+   
+    if request.method == 'GET':
+
+   
+      request.session['consultation_id'] = consultation_id
+      consultation_obj = consultation.objects.get(id=consultation_id)
+
+      return render(request,'consultation/consultation.html', {"consultation":consultation_obj })
+
+   #  if request.method == 'POST':
+   #    return render(request,'consultation/consultation.html' )
+
+
+
+
+
+def rate_review(request,consultation_id):
+   if request.method == "POST":
+         
+         consultation_obj = consultation.objects.get(id=consultation_id)
+         patient = consultation_obj.patient
+         doctor1 = consultation_obj.doctor
+         rating = request.POST.get('rating')
+         review = request.POST.get('review')
+
+         rating_obj = rating_review(patient=patient,doctor=doctor1,rating=rating,review=review)
+         rating_obj.save()
+
+         rate = int(rating_obj.rating_is)
+         doctor.objects.filter(pk=doctor1).update(rating=rate)
+         
+
+         return redirect('consultationview',consultation_id)
+
+
+
+
+
+def close_consultation(request,consultation_id):
+   if request.method == "POST":
+         
+         consultation.objects.filter(pk=consultation_id).update(status="closed")
+         
+         return redirect('home')
+
 
