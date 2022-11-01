@@ -6,6 +6,8 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.models import User , auth
 from .models import patient , doctor , diseaseinfo , consultation ,rating_review
+from chats.models import Chat,Feedback
+
 import joblib as jb
 model = jb.load('trained_model')
 # Create your views here.
@@ -115,7 +117,12 @@ def checkdisease(request):
 
     alphabaticsymptomslist = sorted(symptomslist)
 
-    if request.method == "POST":
+
+    if request.method == 'GET':
+      
+      return render(request,'patient/checkdisease/checkdisease.html', {"list2":alphabaticsymptomslist})
+
+    elif request.method == "POST":
         syms = request.POST.get('sym')
         psymptoms = ['spinning_movements','itching']
         # psymptoms.append(syms)
@@ -144,10 +151,95 @@ def checkdisease(request):
         print(" confidence score of : = {0} ".format(confidencescore))
 
         print(syms)
+        confidencescore = format(confidencescore, '.0f')
+        predicted_disease = predicted[0]
 
-    return render(request, 'home.html')
+        
+
+        #consult_doctor codes----------
+
+        #   doctor_specialization = ["Rheumatologist","Cardiologist","ENT specialist","Orthopedist","Neurologist",
+        #                             "Allergist/Immunologist","Urologist","Dermatologist","Gastroenterologist"]
+        
+
+        Rheumatologist = [  'Osteoarthristis','Arthritis']
+       
+        Cardiologist = [ 'Heart attack','Bronchial Asthma','Hypertension ']
+       
+        ENT_specialist = ['(vertigo) Paroymsal  Positional Vertigo','Hypothyroidism' ]
+
+        Orthopedist = []
+
+        Neurologist = ['Varicose veins','Paralysis (brain hemorrhage)','Migraine','Cervical spondylosis']
+
+        Allergist_Immunologist = ['Allergy','Pneumonia',
+        'AIDS','Common Cold','Tuberculosis','Malaria','Dengue','Typhoid']
+
+        Urologist = [ 'Urinary tract infection',
+         'Dimorphic hemmorhoids(piles)']
+
+        Dermatologist = [  'Acne','Chicken pox','Fungal infection','Psoriasis','Impetigo']
+
+        Gastroenterologist = ['Peptic ulcer diseae', 'GERD','Chronic cholestasis','Drug Reaction','Gastroenteritis','Hepatitis E',
+        'Alcoholic hepatitis','Jaundice','hepatitis A',
+         'Hepatitis B', 'Hepatitis C', 'Hepatitis D','Diabetes ','Hypoglycemia']
+         
+        if predicted_disease in Rheumatologist :
+           consultdoctor = "Rheumatologist"
+           
+        if predicted_disease in Cardiologist :
+           consultdoctor = "Cardiologist"
+           
+
+        elif predicted_disease in ENT_specialist :
+           consultdoctor = "ENT specialist"
+     
+        elif predicted_disease in Orthopedist :
+           consultdoctor = "Orthopedist"
+     
+        elif predicted_disease in Neurologist :
+           consultdoctor = "Neurologist"
+     
+        elif predicted_disease in Allergist_Immunologist :
+           consultdoctor = "Allergist/Immunologist"
+     
+        elif predicted_disease in Urologist :
+           consultdoctor = "Urologist"
+     
+        elif predicted_disease in Dermatologist :
+           consultdoctor = "Dermatologist"
+     
+        elif predicted_disease in Gastroenterologist :
+           consultdoctor = "Gastroenterologist"
+     
+        else :
+           consultdoctor = "other"
 
 
+        request.session['doctortype'] = consultdoctor 
+
+        patientusername = request.session['patientusername']
+        puser = User.objects.get(username=patientusername)
+     
+
+        #saving to database.....................
+
+        patient = puser.patient
+        diseasename = predicted_disease
+        no_of_symp = inputno
+        symptomsname = psymptoms
+        confidence = confidencescore
+
+        diseaseinfo_new = diseaseinfo(patient=patient,diseasename=diseasename,no_of_symp=no_of_symp,symptomsname=symptomsname,confidence=confidence,consultdoctor=consultdoctor)
+        diseaseinfo_new.save()
+        
+
+        request.session['diseaseinfo_id'] = diseaseinfo_new.id
+
+        print("disease record saved sucessfully.............................")
+
+        return JsonResponse({'predicteddisease': predicted_disease ,'confidencescore':confidencescore , "consultdoctor": consultdoctor})
+   
 
 
 
@@ -311,3 +403,37 @@ def close_consultation(request,consultation_id):
          return redirect('home')
 
 
+
+#-----------------------------chatting system ---------------------------------------------------
+
+
+def post(request):
+    if request.method == "POST":
+        msg = request.POST.get('msgbox', None)
+
+        consultation_id = request.session['consultation_id'] 
+        consultation_obj = consultation.objects.get(id=consultation_id)
+
+        c = Chat(consultation_id=consultation_obj,sender=request.user, message=msg)
+
+        #msg = c.user.username+": "+msg
+
+        if msg != '':            
+            c.save()
+            print("msg saved"+ msg )
+            return JsonResponse({ 'msg': msg })
+    else:
+        return HttpResponse('Request must be POST.')
+
+
+
+def chat_messages(request):
+   if request.method == "GET":
+
+         consultation_id = request.session['consultation_id'] 
+
+         c = Chat.objects.filter(consultation_id=consultation_id)
+         return render(request, 'consultation/chat_body.html', {'chat': c})
+
+
+#-----------------------------chatting system ---------------------------------------------------
