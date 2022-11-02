@@ -44,11 +44,11 @@ class doctor(models.Model):
     year_of_registration = models.DateField()
     qualification = models.CharField(max_length = 20)
     State_Medical_Council = models.CharField(max_length = 30)
-
+    # CHOICES TODO
     specialization = models.CharField(max_length = 30)
 
-    rating = models.IntegerField(default=0)
-
+    rating = models.IntegerField(default=0) 
+    # rating TODO 
 
 class diseaseinfo(models.Model):
 
@@ -91,3 +91,4 @@ class rating_review(models.Model):
         new_rating = int(new_rating)
         
         return new_rating
+        # Inprogress
