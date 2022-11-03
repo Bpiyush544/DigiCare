@@ -107,7 +107,7 @@ $("#predict").click(function () {
       url: 'checkdisease',
       type: "POST",
       data: { "noofsym" : noofsym,
-              "symptoms" :symlist,
+              "symptoms" :String(symlist),
               csrfmiddlewaretoken : $('input[name=csrfmiddlewaretoken]').val()
       },
       dataType: 'json',

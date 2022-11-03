@@ -113,13 +113,13 @@ def checkdisease(request):
         return render(request, 'patient/checkdisease/checkdisease.html', {"list2": alphabaticsymptomslist})
 
     elif request.method == "POST":
-        noofsym = request.POST.get('noofsym')
+        inputno = request.POST.get('noofsym')
         symptoms = request.POST.get('symptoms')
-        print(noofsym)
-        print(symptoms)
+        psymptoms = symptoms.split(',')
+      #   print(noofsym)
+      #   print(symptoms)
         syms = request.POST.get('sym')
-        print(syms, "hello")
-        psymptoms = ['spinning_movements', 'itching']
+      #   psymptoms = ['spinning_movements', 'itching']
         # psymptoms.append(syms)
         testingsymptoms = []
         # append zero in all coloumn fields...
@@ -207,7 +207,7 @@ def checkdisease(request):
 
         else:
             consultdoctor = "other"
-
+        print(consultdoctor)
         request.session['doctortype'] = consultdoctor
 
         patientusername = request.session['patientusername']
